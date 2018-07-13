@@ -1,0 +1,12 @@
+body {
+	font-family: "Liberation Mono";
+	font-size: 0.9rem;
+}
+
+.btn {
+	font-weight: 500;
+}
+
+.tab-pane:not(.show) {
+	display: none;
+}

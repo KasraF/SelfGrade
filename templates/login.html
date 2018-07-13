@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="resources/images/favicon.ico">
+
+    <title>SelfGrade Hub</title>
+
+    <!-- Library CSS -->
+    <link href="resources/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+	<link href="resources/lib/font-awesome/css/all.css" rel="stylesheet">
+	
+    <!-- Load our stylesheet after the library ones to override overlapping rules -->
+    <link href="resources/css/hub.css" rel="stylesheet">
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="col-sm-12 offset-md-3 col-md-6 offset-lg-4 col-lg-4">
+		<div class="text-center mt-5">
+		  <div class="card">
+			<h1 class="card-header">SelfGrade</h1>
+			<div class="card-header">
+			  <ul class="nav nav-tabs card-header-tabs">
+				<li class="nav-item">
+				  <a class="nav-link active" href="#signin" data-toggle="tab">Sign In</a>
+				</li>
+				<li class="nav-item">
+				  <a class="nav-link" href="#signup" data-toggle="tab">Sign Up</a>
+				</li>
+				<li class="nav-item">
+				  <a class="nav-link disabled" href="#admin" data-toggle="tab">Admin</a>
+				</li>
+			  </ul>
+			</div>
+			<div class="card-body">
+			  <div class="tab-pane fade show active" id="signin">
+				<form id="signin-form" action="/login" method="POST">
+				  <div class="form-group">
+					<label for="email">Enter Email:</label>
+					<input type="email" class="form-control form-control-sm" id="email" name="email" placeholder="Email Address">
+				  </div>
+				  <div class="form-group">
+					<label for="password">Enter Password:</label>
+					<input type="password" class="form-control form-control-sm" id="password" name="password" placeholder="Password">
+				  </div>
+				  <button type="submit" class="btn btn-primary btn-sm">Sign In</button>
+				</form>
+			  </div>
+			  <div class="tab-pane fade" id="signup">
+				<form action="/signup" method="post">
+				  <div class="form-group">
+					<label for="email">Enter Email:</label>
+					<input type="email" class="form-control form-control-sm" id="email" name="email" placeholder="Email Address">
+				  </div>
+				  <div class="form-group">
+					<label for="password">Enter Password:</label>
+					<input type="password" class="form-control form-control-sm" id="password" name="password" placeholder="Password">
+				  </div>
+				  <div class="form-group">
+					<label for="confirm">Confirm Password:</label>
+					<input type="password" class="form-control form-control-sm" id="confirm" name="confirm" placeholder="Password">
+				  </div>				  
+				  <button type="submit" class="btn btn-primary btn-sm">Sign Up</button>
+				</form>
+			  </div>
+			  <div class="tab-pane fade" id="admin">
+				<!-- TODO -->
+			  </div>
+			</div>
+		  </div>
+		</div>
+      </div>
+    </div>
+  </body>
+  <foot>
+	<script src="resources/lib/jquery/jquery.js"></script>	
+    <script src="resources/lib/bootstrap/js/bootstrap.js"></script>	
+  </foot>
+</html>
