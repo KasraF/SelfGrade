@@ -2,54 +2,112 @@ package security
 
 import (
 	"golang.org/x/crypto/bcrypt"
+	"fmt"
 	"GoLog"
 )
 
+import (
+	"SelfGrade/code/utils"
+	"SelfGrade/code/persistance"
+)
+
+/** 
+ * This struct only stores the security details, without the account info.
+ */
 type User struct {
-	Username string
-	Password []byte
+	Email string
+	Role string
 	Authenticated bool
 }
 
-var users = make(map[string]User)
+const ADMIN_ROLE = "ADMIN"
+const USER_ROLE  = "USER"
+
 var logger = GoLog.GetLogger()
+var db     = persistance.GetDatabase()
 
-func NewUser(username string) {
-	users[username] = User{Username: username, Authenticated: false}
-}
+func NewUser(name string, email string, password string, admin bool) error {
+	user := persistance.User{Email: email}
+	exists, err := user.Find(db)
 
-func GetUser(username string) (User, bool) {
-	user, ok := users[username]
-	return user, ok
-}
+	if err == nil {
+		if !exists {
+			passhash, err := hashPassword(password)
 
-func UpdatePassword(username string, password string) {
-	user, ok := users[username]
+			if err == nil {
+				user.Name     = name
+				user.Password = passhash
 
-	if ok {
-		var err error
-		user.Password, err = bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-		
-		if err != nil {
-			// TODO Why would this ever fail?
-			logger.Error("Failed to hash the given password: \"%s\"", err, password)
+				if admin {
+					user.Role = ADMIN_ROLE
+				} else {
+					user.Role = USER_ROLE
+				}
+					
+				user.Save(db)
+			}
 		} else {
-			users[username] = user
+			err = utils.Error{Message: fmt.Sprintf("An account with email \"%s\" already exists.", user.Email)}
 		}
-	} else {
-		logger.Debug("Called UpdatePassword() for non-existing user %s. Ignoring.", username)
 	}
+
+	return err
 }
 
-func Authenticate(username string, password string) bool {
-	user, ok := users[username]
-
-	if !ok {
-		logger.Debug("Called Authenticate() for non-existing user %s. Ignoring.", username)
-		return false
-	} else {
-		user.Authenticated = bcrypt.CompareHashAndPassword(user.Password, []byte(password)) == nil
-		users[username] = user
-		return user.Authenticated
+func GetUser(email string) (User, bool) {
+	var user User
+	database_user := persistance.User{Email: email}
+	found, err := database_user.Find(db)
+	
+	if err != nil {
+		logger.Error("Trying to Find() user with email \"%s\" threw an error.", err, email)
+		found = false
+	} else if found {
+		user.Email = database_user.Email
+		user.Authenticated = false
+		user.Role = database_user.Role
 	}
+	
+	return user, found
+}
+
+func GetAndAuthenticateUser(email string, password string) (User, bool) {
+	user, found := GetUser(email)
+
+	if found {
+		user.Authenticate(password)
+	}
+
+	return user, found
+}
+
+func hashPassword(password string) ([]byte, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	
+	if err != nil {
+		// TODO Why would this ever fail?
+		logger.Error("Failed to hash the given password: \"%s\"", err, password)
+		return nil, err
+	}
+
+	return hash, nil
+}
+
+func (user *User) Authenticate(password string) bool {
+	var authenticated bool
+	database_user := persistance.User{Email: user.Email}
+	found, err := database_user.Find(db)
+
+	if err != nil {
+		logger.Error("Trying to Find() user with email \"%s\" threw an error.", err, user.Email)
+		authenticated = false
+	} else if !found {
+		logger.Debug("Called Authenticate() for non-existing user %s. Ignoring.", user.Email)
+		authenticated = false
+	} else {
+		user.Authenticated = bcrypt.CompareHashAndPassword(database_user.Password, []byte(password)) == nil
+		authenticated = user.Authenticated
+	}
+
+	return authenticated
 }

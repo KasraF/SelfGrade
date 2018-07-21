@@ -17,27 +17,24 @@ func securityFilter(h http.HandlerFunc) http.HandlerFunc {
 
 		// Redirects to "/login" if new/anonymous session
 		sessionId, sessionNotFound := r.Cookie(SessionCookieName)
-		authenticated := sessionNotFound == nil
-		var session Session
 
-		if authenticated {
+		if sessionNotFound == nil {
 
 			// Session cookie exists. See if we know about it
-			session, sessionNotFound = FindSession(sessionId.Value)
-			authenticated = sessionNotFound == nil
+			session, found := FindSession(sessionId.Value)
 
-			if authenticated {
+			if found {
 				// We know about the session. See if authenticated
-				if session.Authenticated {
+
+				if session.Authenticated() {
 					// Hurray! serve the page!
 					h(w, r)
-
 				} else {
 					// Anonymous session. Redirect to login.
 					w.Header()["Location"] = []string{"/login"}
 					w.WriteHeader(302)
 				}
-
+				
 			} else {
 				// We don't know about the session create a new one and ask user to log in.
 				session = NewSession()
@@ -47,7 +44,7 @@ func securityFilter(h http.HandlerFunc) http.HandlerFunc {
 			}
 		} else {
 			// No session cookie. A new user... Exciting!
-			session = NewSession()
+			session := NewSession()
 			w.Header()["Set-Cookie"] = []string{SessionCookieName + "=" + session.Id + "; Max-Age=1800"}
 			w.Header()["Location"] = []string{"/login"}
 			w.WriteHeader(302)

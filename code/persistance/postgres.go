@@ -15,12 +15,12 @@ const (
 		"id serial NOT NULL," +
 		"name VARCHAR(255) NOT NULL," +
 		"email varchar(255) NOT NULL," +
-		"password varchar(255) NOT NULL," +
+		"password bytea NOT NULL," +
 		"role varchar(255) NOT NULL," +
 		"PRIMARY KEY (id)" +
 		");"
-	qu_user_findByID    = "SELECT * FROM users WHERE user.id = $1"
-	qu_user_findByEmail = "SELECT * FROM users WHERE user.email = $1"
+	qu_user_findByID    = "SELECT * FROM users WHERE users.id = $1"
+	qu_user_findByEmail = "SELECT * FROM users WHERE users.email = $1"
 	qu_user_save        = "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4);"
 )
 
@@ -77,7 +77,7 @@ func createUserTable() error {
 	return tx.Commit()
 }
 
-func (user *User) Find(db *sql.DB) error {
+func (user *User) Exists(db *sql.DB) (bool, error) {
 	var rows *sql.Rows
 	var err error
 
@@ -87,25 +87,44 @@ func (user *User) Find(db *sql.DB) error {
 		rows, err = db.Query(qu_user_findByEmail, user.Email)
 	}
 
-	defer rows.Close()
+	return rows.Next(), err
+}
 
-	if err != nil { return err }
+func (user *User) Find(db *sql.DB) (bool, error) {
+	var rows *sql.Rows
+	var err error
+	found := false
+
+	if user.Id > 0 {
+		rows, err = GetDatabase().Query(qu_user_findByID, user.Id)
+	} else if user.Email != "" {
+		rows, err = GetDatabase().Query(qu_user_findByEmail, user.Email)
+	}
+
+	if err != nil { return false, err }
+
+	defer rows.Close()
 
 	if rows.Next() {
 		err = rows.Scan(&user.Id, &user.Name, &user.Email, &user.Password, &user.Role)
+		found = true
 	}
-
-	if err != nil { return err }
+	
+	if err != nil { return false, err }
 
 	if rows.Next() {
 		logger.Warn("FindUser() returned multiple results for user %s", nil, user)
 	}
 
-	return nil
+	return found, nil
 }
 
 func (user *User) Save(db *sql.DB) error {
-	// TODO: Do we need to wrap the strings with '' before passing them here?
-	_, err := db.Exec(qu_user_save, user.Name, user.Email, user.Password, user.Role)
+	_, err := GetDatabase().Exec(qu_user_save, user.Name, user.Email, user.Password, user.Role)
+
+	if err != nil {
+		logger.Error("", err)
+	}
+	
 	return err
 }

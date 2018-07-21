@@ -42,17 +42,20 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			// TODO Handle
 			logger.Error("Parsing login form failed.", err)
+			w.Header()["Location"] = []string{"/login"}
+			w.WriteHeader(302)
 		} else {
 			form := r.PostForm
-			username := form.Get("email")
-			password := form.Get("password")
 
-			// TODO Handle "User does not exist" cases
+			email    := form.Get("email")
+			password := form.Get("password")
 			
-			if security.Authenticate(username, password) {
+			// TODO Handle "User does not exist" cases
+			user, found := security.GetAndAuthenticateUser(email, password)
+			
+			if found && user.Authenticated {
 				session := NewSession()
-				session.Authenticated = true
-				session.User, _ = security.GetUser(username)
+				session.user = user
 				SaveSession(session)
 
 				w.Header()["Set-Cookie"] = []string{SessionCookieName + "=" + session.Id + "; Max-Age=1800"}
@@ -80,13 +83,15 @@ func signupHandler(w http.ResponseWriter, r *http.Request) {
 			logger.Error("Parsing signup form failed.", err)
 		} else {
 			form := r.PostForm
-			username := form.Get("email")
+
+			name     := form.Get("name")
+			email    := form.Get("email")
 			password := form.Get("password")
 			confirm  := form.Get("confirm")
 
-			if _, ok := security.GetUser(username); ok {
+			if _, found := security.GetUser(email); found {
 				// Handle case where user exists
-				logger.Debug("Sign up request for existing user: %s", username)
+				logger.Debug("Sign up request for existing email: %s", email)
 				w.Header()["Location"] = []string{"/login"}
 				w.WriteHeader(302)
 			} else if strings.Compare(password, confirm) != 0 {
@@ -96,14 +101,27 @@ func signupHandler(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(302)
 			} else {
 				// Create user
-				security.NewUser(username)
-				security.UpdatePassword(username, password)
-				security.Authenticate(username, password)
+				err = security.NewUser(name, email, password, false)
 
+				if err != nil {
+					logger.Error("Failed to create new user %s", err, email)
+				}
+				
+				user, found := security.GetUser(email)
+
+				if !found {
+					logger.Error("Created User %s but cannot Get() it from security. Redirecting to login page.", nil, email)
+					w.Header()["Location"] = []string{"/login"}
+					w.WriteHeader(302)
+					return
+				}
+
+				// User is authenicated.
+				user.Authenticated = true
+				
 				// Create new session
 				session := NewSession()
-				session.Authenticated = true
-				session.User, _ = security.GetUser(username)
+				session.user = user
 				SaveSession(session)
 
 				// Login the user

@@ -3,19 +3,21 @@ package web
 import (
 	"math/rand"
 	"SelfGrade/code/security"
-	"SelfGrade/code/utils"
 )
 
 type Session struct {
 	Id string
-	User security.User
-	Authenticated bool
+	user security.User
 	attributes map[string]interface{}
 }
 
 const SessionCookieName = "GSESSION"
 
 var sessions = make(map[string]Session)
+
+func (session *Session) Authenticated() bool {
+	return session.user.Authenticated
+}
 
 func NewSession() Session {
 	sessionID := generateSessionId()
@@ -28,31 +30,18 @@ func SaveSession(session Session) {
 	sessions[session.Id] = session
 }
 
-func FindSession(sessionID string) (Session, error) {
+func FindSession(sessionID string) (Session, bool) {
 	session, ok := sessions[sessionID]
-
-	if !ok {
-		return session, utils.Error{Message:"Session with ID " + sessionID + " not found.", Cause:nil}
-	}
-
-	return session, nil
+	return session, ok
 }
 
-func (session Session) AddAttribute(attrName string, attr interface{}) {
+func (session *Session) AddAttribute(attrName string, attr interface{}) {
 	session.attributes[attrName] = attr
 }
 
-
-func (session Session) GetAttribute(attr string) (interface{}, error) {
-	attribute, ok := session.attributes[attr]
-
-	if !ok {
-		return attribute, utils.Error{Message:"Session attribute with ID " + attr + " not found.", Cause:nil}
-	}
-
-	return attribute, nil
+func (session *Session) GetAttribute(attr string) interface{} {
+	return session.attributes[attr]
 }
-
 
 func generateSessionId() string {
 	const POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"

@@ -1,5 +1,7 @@
 # ignore build artifacts
-main Untitled
+main
+Untitled
+Unnamed
 
 # ignore all logs
 *.log

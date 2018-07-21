@@ -1,7 +1,8 @@
 package persistance
 
 type Table interface {
-	Find() error
+	Exists() (bool, error)
+	Find() (bool, error)
 	Save() error
 }
 
@@ -9,6 +10,6 @@ type User struct {
 	Id int
 	Name string
 	Email string
-	Password string
+	Password []byte
 	Role string
 }
