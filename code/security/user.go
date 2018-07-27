@@ -2,6 +2,7 @@ package security
 
 import (
 	"golang.org/x/crypto/bcrypt"
+	"database/sql"
 	"fmt"
 	"GoLog"
 )
@@ -23,8 +24,13 @@ type User struct {
 const ADMIN_ROLE = "ADMIN"
 const USER_ROLE  = "USER"
 
-var logger = GoLog.GetLogger()
-var db     = persistance.GetDatabase()
+var logger *GoLog.Logger
+var db     *sql.DB
+
+func Init() {
+	logger = GoLog.GetLogger()
+	db     = persistance.GetDatabase()
+}
 
 func NewUser(name string, email string, password string, admin bool) error {
 	user := persistance.User{Email: email}

@@ -10,6 +10,7 @@ import (
 	"GoLog"
 	"SelfGrade/code/persistance"
 	"SelfGrade/code/web"
+	"SelfGrade/code/security"
 )
 
 func main() {
@@ -25,6 +26,11 @@ func main() {
 	persistance.InitPostgreSQL()
 	logger.Log("Database open.")
 
+	// Configure security
+	logger.Log("Initializing Security...")
+	security.Init()
+	logger.Log("Security initialized.")
+	
 	// Configure web handlers
 	logger.Log("Configuring handlers...")
 	web.Init()
