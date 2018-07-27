@@ -1,7 +1,7 @@
 # selfgrade
 An organization (Web) App for balancing work and school without constantly forgetting to submit your EE16B selfgrade.
 
-######NOTE: This is my first attempt at writing a program in GoLang. It is not meant for actual use. :( 
+## NOTE: This is my first attempt at writing a program in GoLang. It is not meant for actual use. :( 
 
 ## TODO
 - Missing core features:
