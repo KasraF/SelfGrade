@@ -10,6 +10,7 @@ import (
 var database *sql.DB = nil
 var logger = GoLog.GetLogger()
 
+// The User type queries
 const (
 	ex_user_createTable = "CREATE TABLE IF NOT EXISTS users (" +
 		"id serial NOT NULL," +
@@ -24,9 +25,25 @@ const (
 	qu_user_save        = "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4);"
 )
 
+// The App type queries
+const (
+	ex_app_createTable = "CREATE TABLE IF NOT EXISTS apps (" +
+		"id serial NOT NULL," +
+		"name VARCHAR(255) NOT NULL," +
+		"description varchar(1024) NOT NULL," +
+		"url varchar(1024) NOT NULL," +
+		"iconUrl varchar(1024) NOT NULL," +
+		"PRIMARY KEY (id)" +
+		");"
+	qu_app_findByID   = "SELECT * FROM apps WHERE apps.name = $1;"
+	qu_app_findByName = "SELECT * FROM apps WHERE apps.id = $1;"
+	qu_app_findAll    = "SELECT * FROM apps;"
+	qu_app_save       = "INSERT INTO apps (name, description, url, iconUrl) VALUES ($1, $2, $3, $4);"
+)
+
 func InitPostgreSQL() {
 	var err error
-	database, err = sql.Open("postgres", "user=selfgrade password=password dbname=selfgrade sslmode=disable")
+	database, err = sql.Open("postgres", "user=selfgrade password=K!apauc1u5 dbname=selfgrade sslmode=disable")
 
 	if err != nil {
 		logger.Error("Connection to PostgreSQL database failed. Exiting.", err)
@@ -37,7 +54,14 @@ func InitPostgreSQL() {
 	err = createUserTable()
 
 	if err != nil {
-		logger.Error("Creating database tables failed. Exiting.", err)
+		logger.Error("Creating database Users table failed. Exiting.", err)
+		os.Exit(1)
+	}
+
+	err = createAppsTable()
+
+	if err != nil {
+		logger.Error("Creating database Apps table failed. Exiting.", err)
 		os.Exit(1)
 	}
 }
@@ -50,12 +74,18 @@ func GetDatabase() *sql.DB {
 	return database
 }
 
+func hasId(id int) bool {
+	return id > 0
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Implementations in PostgreSQL for data types.
 // ---------------------------------------------------------------------------------------------------------------------
 
 /*********
  * User
+ *
+ * @Todo Remove the need to pass the database to user function calls.
  ********/
 func createUserTable() error {
 	tx, err := database.Begin()
@@ -81,7 +111,7 @@ func (user *User) Exists(db *sql.DB) (bool, error) {
 	var rows *sql.Rows
 	var err error
 
-	if user.Id > -1 {
+	if hasId(user.Id) {
 		rows, err = db.Query(qu_user_findByID, user.Id)
 	} else if user.Email != "" {
 		rows, err = db.Query(qu_user_findByEmail, user.Email)
@@ -95,7 +125,7 @@ func (user *User) Find(db *sql.DB) (bool, error) {
 	var err error
 	found := false
 
-	if user.Id > 0 {
+	if hasId(user.Id) {
 		rows, err = GetDatabase().Query(qu_user_findByID, user.Id)
 	} else if user.Email != "" {
 		rows, err = GetDatabase().Query(qu_user_findByEmail, user.Email)
@@ -127,4 +157,104 @@ func (user *User) Save(db *sql.DB) error {
 	}
 	
 	return err
+}
+
+/*********
+ * Apps
+ ********/
+func createAppsTable() error {
+	tx, err := GetDatabase().Begin()
+
+	if err != nil {
+		logger.Error("Could not begin transaction to create tables.", err)
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(ex_app_createTable)
+
+	if err != nil {
+		logger.Error("Failed to create apps table.", err)
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (app *App) Exists() (bool, error) {
+	var rows *sql.Rows
+	var err error
+
+	if hasId(app.Id) {
+		rows, err = GetDatabase().Query(qu_app_findByID, app.Id)
+	} else if app.Name != "" {
+		rows, err = GetDatabase().Query(qu_app_findByName, app.Name)
+	}
+
+	return rows.Next(), err
+}
+
+func (app *App) Find() (bool, error) {
+	var rows *sql.Rows
+	var err error
+	found := false
+
+	if hasId(app.Id) {
+		rows, err = GetDatabase().Query(qu_app_findByID, app.Id)
+	} else if app.Name != "" {
+		rows, err = GetDatabase().Query(qu_app_findByName, app.Name)
+	}
+
+	if err != nil { return false, err }
+
+	defer rows.Close()
+
+	if rows.Next() {
+		err = rows.Scan(&app.Id, &app.Name, &app.Description, &app.Url, &app.IconUrl)
+		found = true
+	}
+	
+	if err != nil { return false, err }
+
+	if rows.Next() {
+		logger.Warn("App.Find() returned multiple results for app %s", nil, app)
+	}
+
+	return found, nil
+}
+
+func (app *App) Save() error {
+	_, err := GetDatabase().Exec(qu_app_save, app.Name, app.Description, app.Url, app.IconUrl)
+	
+	if err != nil {
+		logger.Error("", err)
+	}
+	
+	return err
+}
+
+func FindAllApps() ([]App, error) {
+	var apps []App
+
+	rows, err := GetDatabase().Query(qu_app_findAll)
+
+	if err != nil { return nil, err}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var app App
+		err = rows.Scan(&app.Id, &app.Name, &app.Description, &app.Url, &app.IconUrl)
+
+		if err != nil {
+			logger.Error("Failed to scan app in FindAllApp(). Skipping this app.", err)
+		} else {
+			apps = append(apps, app)
+		}
+	}
+
+	logger.Debug("Found %u apps in call to FindAllApps().", len(apps))
+
+	return apps, nil
 }
