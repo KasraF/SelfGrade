@@ -43,7 +43,7 @@ const (
 
 func InitPostgreSQL() {
 	var err error
-	database, err = sql.Open("postgres", "user=selfgrade password=K!apauc1u5 dbname=selfgrade sslmode=disable")
+	database, err = sql.Open("postgres", "user=selfgrade password=password dbname=selfgrade sslmode=disable")
 
 	if err != nil {
 		logger.Error("Connection to PostgreSQL database failed. Exiting.", err)
