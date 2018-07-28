@@ -15,7 +15,7 @@ type User struct {
 	Role     string
 }
 
-type App struct {
+type Module struct {
 	Id          int
 	Name        string
 	Description string

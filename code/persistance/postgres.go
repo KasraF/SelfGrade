@@ -25,9 +25,9 @@ const (
 	qu_user_save        = "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4);"
 )
 
-// The App type queries
+// The Module type queries
 const (
-	ex_app_createTable = "CREATE TABLE IF NOT EXISTS apps (" +
+	ex_module_createTable = "CREATE TABLE IF NOT EXISTS modules (" +
 		"id serial NOT NULL," +
 		"name VARCHAR(255) NOT NULL," +
 		"description varchar(1024) NOT NULL," +
@@ -35,10 +35,10 @@ const (
 		"iconUrl varchar(1024) NOT NULL," +
 		"PRIMARY KEY (id)" +
 		");"
-	qu_app_findByID   = "SELECT * FROM apps WHERE apps.name = $1;"
-	qu_app_findByName = "SELECT * FROM apps WHERE apps.id = $1;"
-	qu_app_findAll    = "SELECT * FROM apps;"
-	qu_app_save       = "INSERT INTO apps (name, description, url, iconUrl) VALUES ($1, $2, $3, $4);"
+	qu_module_findByID   = "SELECT * FROM modules WHERE modules.name = $1;"
+	qu_module_findByName = "SELECT * FROM modules WHERE modules.id = $1;"
+	qu_module_findAll    = "SELECT * FROM modules;"
+	qu_module_save       = "INSERT INTO modules (name, description, url, iconUrl) VALUES ($1, $2, $3, $4);"
 )
 
 func InitPostgreSQL() {
@@ -58,10 +58,10 @@ func InitPostgreSQL() {
 		os.Exit(1)
 	}
 
-	err = createTable(ex_app_createTable)
+	err = createTable(ex_module_createTable)
 
 	if err != nil {
-		logger.Error("Creating database Apps table failed. Exiting.", err)
+		logger.Error("Creating database Modules table failed. Exiting.", err)
 		os.Exit(1)
 	}
 }
@@ -160,30 +160,30 @@ func (user *User) Save(db *sql.DB) error {
 }
 
 /*********
- * Apps
+ * Modules
  ********/
-func (app *App) Exists() (bool, error) {
+func (module *Module) Exists() (bool, error) {
 	var rows *sql.Rows
 	var err error
 
-	if hasId(app.Id) {
-		rows, err = GetDatabase().Query(qu_app_findByID, app.Id)
-	} else if app.Name != "" {
-		rows, err = GetDatabase().Query(qu_app_findByName, app.Name)
+	if hasId(module.Id) {
+		rows, err = GetDatabase().Query(qu_module_findByID, module.Id)
+	} else if module.Name != "" {
+		rows, err = GetDatabase().Query(qu_module_findByName, module.Name)
 	}
 
 	return rows.Next(), err
 }
 
-func (app *App) Find() (bool, error) {
+func (module *Module) Find() (bool, error) {
 	var rows *sql.Rows
 	var err error
 	found := false
 
-	if hasId(app.Id) {
-		rows, err = GetDatabase().Query(qu_app_findByID, app.Id)
-	} else if app.Name != "" {
-		rows, err = GetDatabase().Query(qu_app_findByName, app.Name)
+	if hasId(module.Id) {
+		rows, err = GetDatabase().Query(qu_module_findByID, module.Id)
+	} else if module.Name != "" {
+		rows, err = GetDatabase().Query(qu_module_findByName, module.Name)
 	}
 
 	if err != nil { return false, err }
@@ -191,21 +191,21 @@ func (app *App) Find() (bool, error) {
 	defer rows.Close()
 
 	if rows.Next() {
-		err = rows.Scan(&app.Id, &app.Name, &app.Description, &app.Url, &app.IconUrl)
+		err = rows.Scan(&module.Id, &module.Name, &module.Description, &module.Url, &module.IconUrl)
 		found = true
 	}
 	
 	if err != nil { return false, err }
 
 	if rows.Next() {
-		logger.Warn("App.Find() returned multiple results for app %s", nil, app)
+		logger.Warn("Module.Find() returned multiple results for module %s", nil, module)
 	}
 
 	return found, nil
 }
 
-func (app *App) Save() error {
-	_, err := GetDatabase().Exec(qu_app_save, app.Name, app.Description, app.Url, app.IconUrl)
+func (module *Module) Save() error {
+	_, err := GetDatabase().Exec(qu_module_save, module.Name, module.Description, module.Url, module.IconUrl)
 	
 	if err != nil {
 		logger.Error("", err)
@@ -214,27 +214,27 @@ func (app *App) Save() error {
 	return err
 }
 
-func FindAllApps() ([]App, error) {
-	var apps []App
+func FindAllModules() ([]Module, error) {
+	var modules []Module
 
-	rows, err := GetDatabase().Query(qu_app_findAll)
+	rows, err := GetDatabase().Query(qu_module_findAll)
 
 	if err != nil { return nil, err}
 
 	defer rows.Close()
 
 	for rows.Next() {
-		var app App
-		err = rows.Scan(&app.Id, &app.Name, &app.Description, &app.Url, &app.IconUrl)
+		var module Module
+		err = rows.Scan(&module.Id, &module.Name, &module.Description, &module.Url, &module.IconUrl)
 
 		if err != nil {
-			logger.Error("Failed to scan app in FindAllApp(). Skipping this app.", err)
+			logger.Error("Failed to scan module in FindAllModule(). Skipping this module.", err)
 		} else {
-			apps = append(apps, app)
+			modules = append(modules, module)
 		}
 	}
 
-	logger.Debug("Found %u apps in call to FindAllApps().", len(apps))
+	logger.Debug("Found %u modules in call to FindAllModules().", len(modules))
 
-	return apps, nil
+	return modules, nil
 }
