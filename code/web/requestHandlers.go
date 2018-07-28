@@ -17,6 +17,7 @@ var logger = GoLog.GetLogger()
 
 func Init() {
 	http.HandleFunc("/login", loginHandler)
+	http.HandleFunc("/logout", logoutHandler)
 	http.HandleFunc("/signup", signupHandler)
 	http.HandleFunc("/", securityFilter(homeHandler))
 	http.HandleFunc("/resources/", resourceHandler)
@@ -69,6 +70,35 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	default:
 		logger.Debug("Intercepted %s request to login. Interesting...", r.Method);
+		NotFound(w, r)
+	}
+}
+
+func logoutHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "POST":
+		sessionId, sessionNotFound := r.Cookie(SessionCookieName)
+
+		if sessionNotFound != nil {
+			logger.Debug("Logout request received, but request did not contain a session cookie.. Ignoring.")
+			NotFound(w, r)
+			return
+		}
+		
+		found := RemoveSession(sessionId.Value)
+
+		if !found {
+			logger.Debug("Logout request received from non-existing session. Ignoring.")
+			NotFound(w, r)
+			return
+		}
+		
+		w.Header()["Set-Cookie"] = []string{SessionCookieName + "=" + sessionId.Value + "; Max-Age=0"}
+		w.Header()["Location"]   = []string{"/login"}
+		w.WriteHeader(302)
+		
+	default:
+		logger.Debug("Intercepted %s request to logout. Interesting...", r.Method);
 		NotFound(w, r)
 	}
 }

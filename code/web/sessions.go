@@ -30,6 +30,17 @@ func SaveSession(session Session) {
 	sessions[session.Id] = session
 }
 
+func RemoveSession(id string) bool {
+	
+	_, found := FindSession(id)
+
+	if found {
+		delete(sessions, id)
+	}
+	
+	return found
+}
+
 func FindSession(sessionID string) (Session, bool) {
 	session, ok := sessions[sessionID]
 	return session, ok
