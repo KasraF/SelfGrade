@@ -33,7 +33,8 @@
 			  <a class="nav-link fas fa-user" href="#" title="Account"></a>
 			</li>
 			<li class="nav-item">
-			  <a class="nav-link fas fa-sign-out-alt" href="#" title="Logout"></a>
+			  <a class="nav-link fas fa-sign-out-alt" href="#" title="Logout" onclick="$('#logout-form').submit()"></a>
+			  <form action="/logout" method="post" id="logout-form"></form>
 			</li>
 		  </ul>
 		</div>
