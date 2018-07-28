@@ -111,55 +111,61 @@ func signupHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			// TODO Handle
 			logger.Error("Parsing signup form failed.", err)
-		} else {
-			form := r.PostForm
-
-			name     := form.Get("name")
-			email    := form.Get("email")
-			password := form.Get("password")
-			confirm  := form.Get("confirm")
-
-			if _, found := security.GetUser(email); found {
-				// Handle case where user exists
-				logger.Debug("Sign up request for existing email: %s", email)
-				w.Header()["Location"] = []string{"/login"}
-				w.WriteHeader(302)
-			} else if strings.Compare(password, confirm) != 0 {
-				// Handle case where password and confirm don't match
-				logger.Debug("Sign up password and confirm don't match: %s vs %s", password, confirm)
-				w.Header()["Location"] = []string{"/login"}
-				w.WriteHeader(302)
-			} else {
-				// Create user
-				err = security.NewUser(name, email, password, false)
-
-				if err != nil {
-					logger.Error("Failed to create new user %s", err, email)
-				}
-				
-				user, found := security.GetUser(email)
-
-				if !found {
-					logger.Error("Created User %s but cannot Get() it from security. Redirecting to login page.", nil, email)
-					w.Header()["Location"] = []string{"/login"}
-					w.WriteHeader(302)
-					return
-				}
-
-				// User is authenicated.
-				user.Authenticated = true
-				
-				// Create new session
-				session := NewSession()
-				session.user = user
-				SaveSession(session)
-
-				// Login the user
-				w.Header()["Set-Cookie"] = []string{SessionCookieName + "=" + session.Id + "; Max-Age=1800"}
-				w.Header()["Location"] = []string{"/hub"}
-				w.WriteHeader(302)
-			}
+			return
 		}
+		
+		form := r.PostForm
+
+		name     := form.Get("name")
+		email    := form.Get("email")
+		password := form.Get("password")
+		confirm  := form.Get("confirm")
+		
+		if _, found := security.GetUser(email); found {
+			// Handle case where user exists
+			logger.Debug("Sign up request for existing email: %s", email)
+			w.Header()["Location"] = []string{"/login"}
+			w.WriteHeader(302)
+			return
+		}
+
+		if strings.Compare(password, confirm) != 0 {
+			// Handle case where password and confirm don't match
+			logger.Debug("Sign up password and confirm don't match: %s vs %s", password, confirm)
+			w.Header()["Location"] = []string{"/login"}
+			w.WriteHeader(302)
+			return
+		}
+
+		// Create user
+		err = security.NewUser(name, email, password, false)
+		
+		if err != nil {
+			logger.Error("Failed to create new user %s", err, email)
+		}
+		
+		user, found := security.GetUser(email)
+		
+		if !found {
+			logger.Error("Created User %s but cannot Get() it from security. Redirecting to login page.", nil, email)
+			w.Header()["Location"] = []string{"/login"}
+			w.WriteHeader(302)
+			return
+		}
+		
+		// User is authenicated.
+		user.Authenticated = true
+		
+		// Create new session
+		session := NewSession()
+		session.user = user
+		SaveSession(session)
+		
+		// Login the user
+		w.Header()["Set-Cookie"] = []string{SessionCookieName + "=" + session.Id + "; Max-Age=1800"}
+		w.Header()["Location"] = []string{"/hub"}
+		w.WriteHeader(302)
+		
 	default:
 		logger.Debug("Intercepted %s request to sign up. Interesting...", r.Method);
 		NotFound(w, r)
