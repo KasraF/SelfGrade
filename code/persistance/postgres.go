@@ -51,14 +51,14 @@ func InitPostgreSQL() {
 	}
 
 	// Create the tables
-	err = createUserTable()
+	err = createTable(ex_user_createTable)
 
 	if err != nil {
 		logger.Error("Creating database Users table failed. Exiting.", err)
 		os.Exit(1)
 	}
 
-	err = createAppsTable()
+	err = createTable(ex_app_createTable)
 
 	if err != nil {
 		logger.Error("Creating database Apps table failed. Exiting.", err)
@@ -74,6 +74,26 @@ func GetDatabase() *sql.DB {
 	return database
 }
 
+func createTable(query string) error {
+	tx, err := database.Begin()
+
+	if err != nil {
+		logger.Error("Could not begin transaction to create table.", err)
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec(query)
+
+	if err != nil {
+		logger.Error("Failed to create table with query \"%s\"", err, query)
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
 func hasId(id int) bool {
 	return id > 0
 }
@@ -87,26 +107,6 @@ func hasId(id int) bool {
  *
  * @Todo Remove the need to pass the database to user function calls.
  ********/
-func createUserTable() error {
-	tx, err := database.Begin()
-
-	if err != nil {
-		logger.Error("Could not begin transaction to create tables.", err)
-		tx.Rollback()
-		return err
-	}
-
-	_, err = tx.Exec(ex_user_createTable)
-
-	if err != nil {
-		logger.Error("Failed to create users table.", err)
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit()
-}
-
 func (user *User) Exists(db *sql.DB) (bool, error) {
 	var rows *sql.Rows
 	var err error
@@ -162,26 +162,6 @@ func (user *User) Save(db *sql.DB) error {
 /*********
  * Apps
  ********/
-func createAppsTable() error {
-	tx, err := GetDatabase().Begin()
-
-	if err != nil {
-		logger.Error("Could not begin transaction to create tables.", err)
-		tx.Rollback()
-		return err
-	}
-
-	_, err = tx.Exec(ex_app_createTable)
-
-	if err != nil {
-		logger.Error("Failed to create apps table.", err)
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit()
-}
-
 func (app *App) Exists() (bool, error) {
 	var rows *sql.Rows
 	var err error
