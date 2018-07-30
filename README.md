@@ -5,7 +5,7 @@ An organization (Web) App for balancing work and school without constantly forge
 
 ## TODO
 - Missing core features:
-  - Logout
+  - Installing Docker / Running PostgreSQL
   - Updating SQL tables
   - Basic account settings
   - HTML template parsing (separate library?)
